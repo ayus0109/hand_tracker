@@ -26,7 +26,6 @@ const STATE = {
   canvasMode: 'camera', // 'camera', 'whiteboard', 'blackboard', 'blueprint'
   gridMode: 'none',     // 'none', 'dots', 'graph', 'blueprint'
   soundEnabled: localStorage.getItem('airscribe_audio') !== 'false',
-  autoShapeSnap: true,
 
   // Coordinate smoothing & path tracking
   rawIndexTip: null,
@@ -630,8 +629,6 @@ function finishStroke() {
     STATE.isDrawingShape = false;
     STATE.shapeStartPoint = null;
     playSound('click');
-  } else if (STATE.autoShapeSnap && STATE.tool === 'pen' && STATE.currentStrokePoints.length >= 14) {
-    detectAndSnapShape(STATE.currentStrokePoints);
   }
 
   STATE.prevPoint = null;
@@ -783,71 +780,6 @@ function animateLastDrawing() {
   showToast(`Doodle brought to life! (${STATE.aliveDoodles.length} active ✨)`, '🐟');
 }
 
-function detectAndSnapShape(points) {
-  if (points.length < 14) return false;
-  const start = points[0];
-  const end = points[points.length - 1];
-  const directDist = Math.hypot(end.x - start.x, end.y - start.y);
-
-  let totalLen = 0;
-  for (let i = 1; i < points.length; i++) {
-    totalLen += Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
-  }
-  if (totalLen < 35) return false;
-
-  const linearity = directDist / totalLen;
-  if (linearity > 0.88 && directDist > 45) {
-    undo();
-    pushUndoState();
-    renderShape(drawCtx, start, end, 'line', STATE.color, STATE.size, false);
-    showToast('Snapped: Straight Line ✨', '📏');
-    playSound('click');
-    return true;
-  }
-
-  const isClosed = directDist < 0.28 * totalLen || directDist < 55;
-  if (isClosed) {
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    points.forEach(p => {
-      if (p.x < minX) minX = p.x;
-      if (p.x > maxX) maxX = p.x;
-      if (p.y < minY) minY = p.y;
-      if (p.y > maxY) maxY = p.y;
-    });
-    const bw = maxX - minX;
-    const bh = maxY - minY;
-    const aspect = Math.abs(bw - bh) / Math.max(bw, bh);
-
-    if (aspect < 0.28 && bw > 30) {
-      undo();
-      pushUndoState();
-      const center = { x: (minX + maxX) / 2, y: (minY + maxY) / 2 };
-      const radius = (bw + bh) / 4;
-      drawCtx.save();
-      drawCtx.strokeStyle = STATE.color;
-      drawCtx.lineWidth = STATE.size;
-      drawCtx.beginPath();
-      drawCtx.arc(center.x, center.y, radius, 0, Math.PI * 2);
-      drawCtx.stroke();
-      drawCtx.restore();
-      showToast('Snapped: Perfect Circle ✨', '⭕');
-      playSound('click');
-      return true;
-    } else if (bw > 35 && bh > 35) {
-      undo();
-      pushUndoState();
-      drawCtx.save();
-      drawCtx.strokeStyle = STATE.color;
-      drawCtx.lineWidth = STATE.size;
-      drawCtx.strokeRect(minX, minY, bw, bh);
-      drawCtx.restore();
-      showToast('Snapped: Rectangle ✨', '🔲');
-      playSound('click');
-      return true;
-    }
-  }
-  return false;
-}
 
 // =========================================================
 // Adaptive Landmark Smoothing (EMA)
@@ -1085,20 +1017,10 @@ document.getElementById('btnToggleAudio').addEventListener('click', () => {
 });
 updateAudioUI();
 
-// Alive Doodle & Smart Snap Action Hooks
+// Alive Doodle Action Hook
 const btnAlive = document.getElementById('btnAlive');
 if (btnAlive) {
   btnAlive.addEventListener('click', animateLastDrawing);
-}
-
-const btnToggleSnap = document.getElementById('btnToggleSnap');
-if (btnToggleSnap) {
-  btnToggleSnap.addEventListener('click', () => {
-    STATE.autoShapeSnap = !STATE.autoShapeSnap;
-    btnToggleSnap.classList.toggle('active', STATE.autoShapeSnap);
-    playSound('click');
-    showToast(`Shape Snapping: ${STATE.autoShapeSnap ? 'ON' : 'OFF'}`, '📐');
-  });
 }
 
 // Fullscreen
@@ -1507,8 +1429,6 @@ window.addEventListener('keydown', (e) => {
     btnOpenGuide.click();
   } else if (e.key.toLowerCase() === 'd') {
     document.getElementById('btnToolPen').click();
-  } else if (e.key.toLowerCase() === 'n') {
-    if (btnToggleSnap) btnToggleSnap.click();
   } else if (e.key.toLowerCase() === 'w') {
     animateLastDrawing();
   } else if (e.key.toLowerCase() === 'k') {

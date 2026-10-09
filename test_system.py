@@ -178,24 +178,22 @@ class TestVirtualWhiteboard(unittest.TestCase):
         self.assertGreater(os.path.getsize(path_pdf), 1000)
 
     def test_08_smart_shape_snapping(self):
-        """Validates smart shape snapping for circular loops and straight lines."""
+        """Validates that by default freehand writing is preserved without unwanted snapping."""
         engine = CanvasEngine(self.width, self.height)
-        engine.auto_shape_snap = True
+        self.assertFalse(engine.auto_shape_snap, "Auto-shape snapping should be disabled by default")
         engine.set_tool(ToolType.PEN)
 
-        # Simulate drawing a rough circular loop
+        # Simulate writing a letter with a rough circular loop
         center_x, center_y, radius = 300, 300, 60
         for angle_deg in range(0, 360, 15):
             rad = np.radians(angle_deg)
             px = int(center_x + radius * np.cos(rad) + np.random.randint(-2, 2))
             py = int(center_y + radius * np.sin(rad) + np.random.randint(-2, 2))
             engine.process_point((px, py), "DRAW")
-        # Close loop
         engine.process_point((center_x + radius, center_y), "DRAW")
         engine.finish_stroke()
 
-        self.assertIsNotNone(engine.last_snapped_shape, "Rough circle should be auto-snapped")
-        self.assertEqual(engine.last_snapped_shape, "Circle")
+        self.assertIsNone(engine.last_snapped_shape, "Freehand writing should not be auto-snapped into shapes")
 
     def test_09_presenter_laser_and_spotlight(self):
         """Validates presenter tools (Laser pointer trail and Spotlight aperture)."""

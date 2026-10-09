@@ -80,7 +80,7 @@ MAX_HISTORY_STATES = 25      # Maximum undo/redo history snapshots
 PINCH_TO_DRAW_DEFAULT = False   # If True, draws by pinching thumb + index tip (Vision Pro style)
 Z_DEPTH_TOUCH_ENABLED = True    # If True, pushes forward in Z-axis to touch digital glass
 Z_TOUCH_DELTA_THRESHOLD = -0.04 # Forward depth threshold relative to wrist/MCP
-AUTO_SHAPE_SNAP_DEFAULT = True  # Automatically snaps hand-drawn loops/boxes to clean geometry
+AUTO_SHAPE_SNAP_DEFAULT = False # Disabled so freehand writing and text are never converted into shapes
 LASER_DECAY_SECONDS = 1.3       # Ephemeral laser pointer trail duration
 SPOTLIGHT_RADIUS = 145          # Radius of the presenter spotlight aperture
 

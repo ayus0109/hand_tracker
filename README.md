@@ -14,8 +14,6 @@ A real-time, touchless digital drawing and note-taking application powered by **
   - Draw any doodle (a fish, bird, butterfly, star, or creature) and activate **Alive Mode** (`W` or ✨ button).
   - The drawing lifts off the page into an autonomous, swimming/floating animated creature with sine-wave body undulation, autonomous swimming kinematics, and floating bubble trails!
   - **Interactive Hand Reactivity**: The creature is attracted to your finger when pointing or pinching (like feeding a pet fish!), and darts away when startled with an open palm!
-- **Smart Shape Snapping ("Smart Ink")**:
-  - Draw freehand rough loops, boxes, or lines; the engine automatically detects and snaps them into mathematically perfect Circles, Rectangles, Triangles, and Straight Lines with visual and audio confirmation.
 - **Presenter Suite**:
   - **Laser Pointer** (`K`): Dynamic, glowing ruby laser trail that evaporates after 1.3 seconds, perfect for presentations and lectures without cluttering the board.
   - **Spotlight Mode** (`J`): Dims the screen by 75% with a smooth feathered circular aperture following your finger.
@@ -55,7 +53,6 @@ A real-time, touchless digital drawing and note-taking application powered by **
 |---|---|
 | `W` | **Bring Doodle Alive!** (Transforms last drawing into swimming/living doodle) |
 | `F` | **Freeze Living Doodles** (Bakes swimming creatures back into static ink) |
-| `N` | **Toggle Smart Shape Snapping** (Snaps rough doodles to clean geometry) |
 | `K` | Select **Laser Pointer** tool |
 | `J` | Select **Spotlight** presenter mode |
 | `T` | Toggle **Apple Vision Pro Pinch-to-Draw** mode |
