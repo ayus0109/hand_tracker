@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AirScribe 2.0 — Interactive AI Gesture Whiteboard</title>
+  <meta name="description" content="Next-generation touchless virtual whiteboard powered by real-time computer vision, MediaPipe hand tracking, and interactive VFX." />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- MediaPipe & PDF Dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="mode-camera">
+
+  <!-- Ambient Cyber Lighting Background Elements -->
+  <div class="ambient-glow ambient-glow-1"></div>
+  <div class="ambient-glow ambient-glow-2"></div>
+
+  <!-- Top Floating Dynamic Island Toolbar -->
+  <header class="toolbar-wrapper" id="toolbarWrapper">
+    <div class="toolbar-container" id="toolbarContainer">
+
+      <!-- Brand & Live AI Heartbeat -->
+      <div class="toolbar-brand" id="brandSection">
+        <div class="brand-logo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m18 15-6-6-6 6"/>
+            <path d="M12 3v12"/>
+            <path d="M5 21h14"/>
+          </svg>
+          <span class="logo-pulse"></span>
+        </div>
+        <div class="brand-info">
+          <div class="brand-title-row">
+            <span class="brand-title">AirScribe</span>
+            <span class="brand-version">2.0</span>
+          </div>
+          <div class="ai-status-row">
+            <span class="ai-pulse-dot" id="aiStatusDot"></span>
+            <span class="ai-status-text" id="aiStatusText">AI Ready</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="toolbar-divider"></div>
+
+      <!-- Main Drawing Tools -->
+      <div class="toolbar-group" id="toolsGroup" role="group" aria-label="Drawing Tools">
+        <button class="tool-btn active" id="btnToolPen" data-tool="pen" data-tooltip="Classic Pen (D)" title="Classic Pen (D)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+          </svg>
+          <span>Pen</span>
+        </button>
+
+        <button class="tool-btn glow-tool-btn" id="btnToolNeon" data-tool="neon" data-tooltip="Neon Glow Ink (N)" title="Neon Glow Ink (N)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>
+          </svg>
+          <span>Neon</span>
+        </button>
+
+        <button class="tool-btn wand-tool-btn" id="btnToolWand" data-tool="wand" data-tooltip="Laser Wand / Disappearing Trail (W)" title="Laser Wand / Disappearing Trail (W)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="m15 4-2 4 4 2-2 4"/>
+            <path d="M4 20l7-7"/>
+            <circle cx="18" cy="6" r="2"/>
+          </svg>
+          <span>Wand</span>
+        </button>
+
+        <button class="tool-btn" id="btnToolHighlighter" data-tool="highlighter" data-tooltip="Highlighter (H)" title="Highlighter (H)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="m9 11-6 6v3h3l6-6"/>
+            <path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/>
+          </svg>
+          <span>High</span>
+        </button>
+
+        <button class="tool-btn" id="btnToolEraser" data-tool="eraser" data-tooltip="Eraser (E or Open Palm)" title="Eraser (E or Open Palm)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/>
+            <path d="M22 21H7"/>
+          </svg>
+          <span>Eraser</span>
+        </button>
+      </div>
+
+      <div class="toolbar-divider"></div>
+
+      <!-- Geometric & Presenter Tools -->
+      <div class="toolbar-group" id="shapesGroup" role="group" aria-label="Shapes">
+        <button class="tool-btn icon-only" id="btnToolLine" data-tool="line" data-tooltip="Line (L)" title="Straight Line (L)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="5" y1="19" x2="19" y2="5"/>
+          </svg>
+        </button>
+
+        <button class="tool-btn icon-only" id="btnToolRect" data-tool="rectangle" data-tooltip="Rectangle (R)" title="Rectangle (R)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect width="18" height="14" x="3" y="5" rx="2"/>
+          </svg>
+        </button>
+
+        <button class="tool-btn icon-only" id="btnToolCircle" data-tool="circle" data-tooltip="Circle (O)" title="Circle (O)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="9"/>
+          </svg>
+        </button>
+
+        <button class="tool-btn icon-only" id="btnToolArrow" data-tool="arrow" data-tooltip="Arrow (A)" title="Arrow (A)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="5" y1="19" x2="19" y2="5"/>
+            <polyline points="10 5 19 5 19 14"/>
+          </svg>
+        </button>
+
+        <button class="tool-btn icon-only" id="btnToolLaser" data-tool="laser" data-tooltip="Laser Pointer (K)" title="Laser Pointer (K)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="4" fill="currentColor"/>
+            <path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
+          </svg>
+        </button>
+
+        <button class="tool-btn icon-only" id="btnToolSpotlight" data-tool="spotlight" data-tooltip="Spotlight (J)" title="Spotlight (J)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="9"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="toolbar-divider"></div>
+
+      <!-- Alive Doodles & Smart Snap -->
+      <div class="toolbar-group" id="smartGroup">
+        <button class="tool-btn magic-btn" id="btnAlive" data-tooltip="Bring Doodle Alive! (W)" title="Bring Doodle Alive! (W)">
+          <span>✨ Alive</span>
+        </button>
+        <button class="tool-btn icon-only active" id="btnToggleSnap" data-tooltip="Auto-Shape Snap (N)" title="Auto-Shape Snap (N)">
+          <span style="font-size: 11px; font-weight: 700;">SNAP</span>
+        </button>
+      </div>
+
+      <div class="toolbar-divider"></div>
+
+      <!-- Designer Color Palette Studio -->
+      <div class="toolbar-group color-group" id="colorGroup">
+        <button class="color-swatch active" data-color="#3B5BFD" style="--c: #3B5BFD;" data-tooltip="Royal Indigo" title="Royal Indigo"></button>
+        <button class="color-swatch" data-color="#1E1F24" style="--c: #1E1F24;" data-tooltip="Obsidian Black" title="Obsidian Black"></button>
+        <button class="color-swatch" data-color="#2D8A68" style="--c: #2D8A68;" data-tooltip="Sage Forest" title="Sage Forest"></button>
+        <button class="color-swatch" data-color="#E05D44" style="--c: #E05D44;" data-tooltip="Warm Terracotta" title="Warm Terracotta"></button>
+        <button class="color-swatch" data-color="#F2A900" style="--c: #F2A900;" data-tooltip="Tuscan Gold" title="Tuscan Gold"></button>
+        <button class="color-swatch" data-color="#64748B" style="--c: #64748B;" data-tooltip="Nordic Slate" title="Nordic Slate"></button>
+        <button class="color-swatch" data-color="#9333EA" style="--c: #9333EA;" data-tooltip="Berry Plum" title="Berry Plum"></button>
+        <button class="color-swatch" data-color="#F8FAFC" style="--c: #F8FAFC;" data-tooltip="Chalk White" title="Chalk White"></button>
+
+        <!-- Custom HTML5 Color Picker -->
+        <label class="color-picker-label" data-tooltip="Custom Color" title="Custom Color">
+          <input type="color" id="customColorInput" value="#3B5BFD" />
+          <span class="color-picker-wheel"></span>
+        </label>
+      </div>
+
+      <div class="toolbar-divider"></div>
+
+      <!-- Brush Size Studio with Dynamic Indicator -->
+      <div class="toolbar-group size-group" id="sizeGroup">
+        <button class="size-btn" data-size="4" data-tooltip="Fine 4px (Key 1)" title="Fine (4px)">S</button>
+        <button class="size-btn active" data-size="8" data-tooltip="Medium 8px (Key 2)" title="Medium (8px)">M</button>
+        <button class="size-btn" data-size="16" data-tooltip="Bold 16px (Key 3)" title="Bold (16px)">L</button>
+        <button class="size-btn" data-size="28" data-tooltip="Marker 28px (Key 4)" title="Marker (28px)">XL</button>
+        <div class="size-preview-dot-wrap" data-tooltip="Current Tip Size">
+          <span class="size-preview-dot" id="sizePreviewDot"></span>
+        </div>
+      </div>
+
+      <div class="toolbar-divider"></div>
+
+      <!-- Action & Utility Controls -->
+      <div class="toolbar-group action-group" id="actionGroup">
+        <button class="action-btn icon-only" id="btnUndo" data-tooltip="Undo (Ctrl+Z)" title="Undo (Ctrl+Z)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 14 4 9l5-5"/>
+            <path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11"/>
+          </svg>
+        </button>
+
+        <button class="action-btn icon-only" id="btnRedo" data-tooltip="Redo (Ctrl+Y)" title="Redo (Ctrl+Y)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="m15 14 5-5-5-5"/>
+            <path d="M20 9H9.5A5.5 5.5 0 0 0 4 14.5v0A5.5 5.5 0 0 0 9.5 20H13"/>
+          </svg>
+        </button>
+
+        <button class="action-btn icon-only danger-hover" id="btnClear" data-tooltip="Clear Canvas (C)" title="Clear Canvas (C)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 6h18"/>
+            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+          </svg>
+        </button>
+
+        <div class="toolbar-divider"></div>
+
+        <!-- Grid Overlay Toggle -->
+        <button class="action-btn icon-only" id="btnToggleGrid" data-tooltip="Toggle Grid (G)" title="Toggle Grid Mode">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect width="18" height="18" x="3" y="3" rx="2"/>
+            <path d="M3 9h18"/>
+            <path d="M3 15h18"/>
+            <path d="M9 3v18"/>
+            <path d="M15 3v18"/>
+          </svg>
+        </button>
+
+        <!-- Canvas Background Mode Cycle -->
+        <button class="action-btn mode-switcher-btn" id="btnThemeMode" data-tooltip="Cycle Mode: AR / Board / Dark / Blueprint (M)" title="Cycle Canvas Theme">
+          <span class="mode-icon-wrap" id="themeModeIcon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M3 7V5a2 2 0 0 1 2-2h2"/>
+              <path d="M17 3h2a2 2 0 0 1 2 2v2"/>
+              <path d="M21 17v2a2 2 0 0 1-2 2h-2"/>
+              <path d="M7 21H5a2 2 0 0 1-2-2v-2"/>
+            </svg>
+          </span>
+          <span class="btn-text" id="themeModeLabel">AR Cam</span>
+        </button>
+
+        <!-- Web Audio SFX Mute/Unmute -->
+        <button class="action-btn icon-only" id="btnToggleAudio" data-tooltip="Toggle Sound FX (U)" title="Sound FX Toggle">
+          <svg id="iconAudioOn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+          </svg>
+          <svg id="iconAudioMuted" class="hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+            <line x1="23" y1="9" x2="17" y2="15"/>
+            <line x1="17" y1="9" x2="23" y2="15"/>
+          </svg>
+        </button>
+
+        <!-- Fullscreen Toggle -->
+        <button class="action-btn icon-only" id="btnFullscreen" data-tooltip="Fullscreen (F)" title="Fullscreen Mode">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3"/>
+            <path d="M21 8V5a2 2 0 0 0-2-2h-3"/>
+            <path d="M3 16v3a2 2 0 0 0 2 2h3"/>
+            <path d="M16 21h3a2 2 0 0 0 2-2v-3"/>
+          </svg>
+        </button>
+
+        <div class="toolbar-divider"></div>
+
+        <!-- Exports -->
+        <button class="action-btn accent-btn" id="btnExportPng" data-tooltip="Save Image (S)" title="Download PNG">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          <span class="btn-text">PNG</span>
+        </button>
+
+        <button class="action-btn accent-btn" id="btnExportPdf" data-tooltip="Export PDF (P)" title="Export PDF">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+          <span class="btn-text">PDF</span>
+        </button>
+
+        <!-- Copy to Clipboard -->
+        <button class="action-btn icon-only" id="btnCopyClipboard" data-tooltip="Copy to Clipboard" title="Copy Image">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
+            <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+          </svg>
+        </button>
+
+        <!-- Gesture Guide / Help Modal Trigger -->
+        <button class="action-btn help-btn" id="btnOpenGuide" data-tooltip="Gesture Guide & Shortcuts (?)" title="Guide (?)">
+          <span class="help-btn-badge">?</span>
+        </button>
+
+        <!-- Dock Minimizer / Collapser -->
+        <button class="action-btn collapse-toggle-btn" id="btnCollapseToolbar" data-tooltip="Collapse Toolbar" title="Collapse Dock">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="m18 15-6-6-6 6"/>
+          </svg>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Mini Collapsed Floating Capsule (Shown when collapsed) -->
+    <div class="collapsed-capsule" id="collapsedCapsule">
+      <div class="capsule-icon">✍️</div>
+      <span class="capsule-tool-name" id="capsuleToolLabel">Pen</span>
+      <span class="capsule-dot" id="capsuleColorDot"></span>
+      <button class="capsule-expand-btn" id="btnExpandToolbar" title="Expand Dock">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="m6 9 6 6 6-6"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Viewport Canvas Workspace -->
+  <main class="canvas-viewport" id="canvasViewport">
+    <!-- Background Camera Video Feed (Processed in memory) -->
+    <video id="webcamVideo" autoplay playsinline muted></video>
+
+    <!-- Layer 1: AR Camera Video Feed Frame -->
+    <canvas id="cameraCanvas" class="viewport-layer"></canvas>
+
+    <!-- Layer 2: Cyber / Studio Grid Overlay Canvas -->
+    <canvas id="gridCanvas" class="viewport-layer"></canvas>
+
+    <!-- Layer 3: Digital Ink Drawing Layer -->
+    <canvas id="drawingCanvas" class="viewport-layer"></canvas>
+
+    <!-- Layer 4: Live Shape Ghost Previews & Laser Wand Trails -->
+    <canvas id="previewCanvas" class="viewport-layer"></canvas>
+
+    <!-- Layer 5: Cyber VFX Sparkle & Particle System Canvas -->
+    <canvas id="particleCanvas" class="viewport-layer"></canvas>
+
+    <!-- Interactive Virtual Hand Reticle / Precision Cursor -->
+    <div class="virtual-cursor" id="virtualCursor">
+      <div class="cursor-glow" id="cursorGlow"></div>
+      <div class="cursor-dot" id="cursorDot"></div>
+      <div class="cursor-dwell-ring">
+        <svg viewBox="0 0 48 48">
+          <circle cx="24" cy="24" r="20" class="dwell-bg"></circle>
+          <circle cx="24" cy="24" r="20" class="dwell-fill" id="dwellFillCircle"></circle>
+        </svg>
+      </div>
+      <div class="cursor-eraser-ring" id="cursorEraserRing"></div>
+      <div class="cursor-badge" id="cursorBadge">✍️</div>
+    </div>
+  </main>
+
+  <!-- Futuristic Holographic PiP Webcam Frame (Bottom-Right) -->
+  <div class="pip-container" id="pipContainer">
+    <div class="pip-corner pip-corner-tl"></div>
+    <div class="pip-corner pip-corner-tr"></div>
+    <div class="pip-corner pip-corner-bl"></div>
+    <div class="pip-corner pip-corner-br"></div>
+
+    <div class="pip-header" id="pipHeader">
+      <div class="pip-status-left">
+        <span class="pip-indicator"></span>
+        <span class="pip-title">Gesture Feed</span>
+      </div>
+      <div class="pip-controls">
+        <button class="pip-btn" id="btnPipToggle" title="Minimize / Restore Feed">_</button>
+      </div>
+    </div>
+    <div class="pip-body" id="pipBody">
+      <canvas id="pipCanvas"></canvas>
+      <div class="pip-crosshair"></div>
+      <div class="pip-hud-tag" id="pipHandTag">Tracking: Hand 1</div>
+    </div>
+  </div>
+
+  <!-- Interactive Telemetry HUD (Bottom-Left) -->
+  <aside class="status-hud" id="statusHud">
+    <!-- Live 5-Finger Biometric Sensor Widget -->
+    <div class="hud-item biometric-item" title="Live Finger State: Thumb, Index, Middle, Ring, Pinky">
+      <span class="hud-label">Finger Sensor</span>
+      <div class="finger-sensor-bar" id="fingerSensorBar">
+        <span class="finger-node" id="fnThumb" title="Thumb">T</span>
+        <span class="finger-node" id="fnIndex" title="Index">I</span>
+        <span class="finger-node" id="fnMiddle" title="Middle">M</span>
+        <span class="finger-node" id="fnRing" title="Ring">R</span>
+        <span class="finger-node" id="fnPinky" title="Pinky">P</span>
+      </div>
+    </div>
+
+    <div class="hud-divider"></div>
+
+    <div class="hud-item">
+      <span class="hud-label">Gesture State</span>
+      <div class="gesture-badge-wrap">
+        <span class="gesture-badge-dot" id="gestureBadgeDot"></span>
+        <span class="hud-value badge-mode" id="hudGestureMode">STANDBY</span>
+      </div>
+    </div>
+
+    <div class="hud-divider"></div>
+
+    <div class="hud-item">
+      <span class="hud-label">Active Tool</span>
+      <span class="hud-value" id="hudTool">PEN (8px)</span>
+    </div>
+
+    <div class="hud-divider"></div>
+
+    <div class="hud-item">
+      <span class="hud-label">Engine</span>
+      <span class="hud-value badge-fps" id="hudFps">60 FPS</span>
+    </div>
+  </aside>
+
+  <!-- Interactive Floating Gesture Quick Legend (Bottom-Center) -->
+  <nav class="gesture-helper" id="gestureHelper" aria-label="Gesture Quick Help">
+    <div class="helper-pill" data-gesture="DRAW">
+      <span class="pill-emoji">☝️</span>
+      <span class="pill-text"><strong>1 Finger</strong> Draw</span>
+    </div>
+    <div class="helper-pill" data-gesture="SELECT">
+      <span class="pill-emoji">✌️</span>
+      <span class="pill-text"><strong>2 Fingers</strong> Select / Hover</span>
+    </div>
+    <div class="helper-pill" data-gesture="PINCH">
+      <span class="pill-emoji">🤏</span>
+      <span class="pill-text"><strong>Pinch</strong> Click</span>
+    </div>
+    <div class="helper-pill" data-gesture="ERASER">
+      <span class="pill-emoji">🖐️</span>
+      <span class="pill-text"><strong>Open Palm</strong> Erase</span>
+    </div>
+    <div class="helper-pill" data-gesture="FIST">
+      <span class="pill-emoji">✊</span>
+      <span class="pill-text"><strong>Fist</strong> Pause</span>
+    </div>
+  </nav>
+
+  <!-- Floating Toast Notification System -->
+  <div class="toast-banner" id="toastBanner" role="status" aria-live="polite">
+    <div class="toast-icon" id="toastIcon">✨</div>
+    <div class="toast-message" id="toastMessage">Welcome to AirScribe!</div>
+  </div>
+
+  <!-- Interactive Gesture Guide & Hotkeys Modal Dialog -->
+  <div class="modal-backdrop" id="guideModalBackdrop">
+    <div class="guide-modal" id="guideModal" role="dialog" aria-modal="true" aria-labelledby="guideModalTitle">
+      <div class="modal-header">
+        <div class="modal-header-left">
+          <div class="modal-icon-badge">🖐️</div>
+          <div>
+            <h2 class="modal-title" id="guideModalTitle">AirScribe Gesture & Command Guide</h2>
+            <p class="modal-subtitle">Full touchless hand tracking controls & keyboard shortcuts</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" id="btnCloseGuide" aria-label="Close Guide">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Section: Gestures Grid -->
+        <h3 class="modal-section-title">🖐️ Real-Time Hand Gestures</h3>
+        <div class="gesture-cards-grid">
+          <div class="gesture-card">
+            <div class="gesture-card-badge">☝️ 1 Finger Up</div>
+            <h4>Draw / Freehand</h4>
+            <p>Raise your index finger only. Write natural strokes, highlighter marks, or drag to form geometric shapes.</p>
+          </div>
+
+          <div class="gesture-card">
+            <div class="gesture-card-badge">✌️ 2 Fingers Up</div>
+            <h4>Hover & Navigate</h4>
+            <p>Peace sign (Index + Middle UP). Move your virtual pointer freely across the canvas without leaving ink.</p>
+          </div>
+
+          <div class="gesture-card">
+            <div class="gesture-card-badge">🤏 Pinch Tips</div>
+            <h4>Instant Click</h4>
+            <p>Touch your Thumb tip and Index fingertip together to immediately click any hovered toolbar button or color swatch.</p>
+          </div>
+
+          <div class="gesture-card">
+            <div class="gesture-card-badge">🖐️ Open Palm / 3+</div>
+            <h4>Quick Eraser</h4>
+            <p>Open your palm or raise 3+ fingers. Instantly transforms into a wide eraser ring to wipe away mistakes.</p>
+          </div>
+
+          <div class="gesture-card">
+            <div class="gesture-card-badge">⏳ 0.5s Hover Dwell</div>
+            <h4>Dwell-to-Select</h4>
+            <p>Hold your 2-finger cursor over any toolbar button for half a second to automatically click it without touching your screen.</p>
+          </div>
+
+          <div class="gesture-card">
+            <div class="gesture-card-badge">✊ Closed Fist</div>
+            <h4>Pause / Standby</h4>
+            <p>Curl all fingers into a gentle fist to commit your active shape and pause drawing without triggering accidental marks.</p>
+          </div>
+        </div>
+
+        <!-- Section: Keyboard Shortcuts Table -->
+        <h3 class="modal-section-title">⌨️ Keyboard Shortcuts</h3>
+        <div class="shortcuts-table-wrapper">
+          <table class="shortcuts-table">
+            <thead>
+              <tr>
+                <th>Key</th>
+                <th>Action</th>
+                <th>Key</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><kbd>D</kbd></td>
+                <td>Classic Pen Tool</td>
+                <td><kbd>Ctrl</kbd> + <kbd>Z</kbd></td>
+                <td>Undo Last Stroke</td>
+              </tr>
+              <tr>
+                <td><kbd>N</kbd></td>
+                <td>Neon Glow Ink Mode</td>
+                <td><kbd>Ctrl</kbd> + <kbd>Y</kbd></td>
+                <td>Redo Stroke</td>
+              </tr>
+              <tr>
+                <td><kbd>W</kbd></td>
+                <td>Laser Wand / Trail</td>
+                <td><kbd>C</kbd></td>
+                <td>Clear Canvas</td>
+              </tr>
+              <tr>
+                <td><kbd>H</kbd></td>
+                <td>Highlighter Tool</td>
+                <td><kbd>M</kbd></td>
+                <td>Cycle Background Mode</td>
+              </tr>
+              <tr>
+                <td><kbd>E</kbd></td>
+                <td>Eraser Tool</td>
+                <td><kbd>G</kbd></td>
+                <td>Toggle Canvas Grid</td>
+              </tr>
+              <tr>
+                <td><kbd>L</kbd> / <kbd>R</kbd> / <kbd>O</kbd> / <kbd>A</kbd></td>
+                <td>Line / Rect / Circle / Arrow</td>
+                <td><kbd>S</kbd> / <kbd>P</kbd></td>
+                <td>Export PNG / PDF</td>
+              </tr>
+              <tr>
+                <td><kbd>1</kbd> – <kbd>4</kbd></td>
+                <td>Brush Size (S, M, L, XL)</td>
+                <td><kbd>U</kbd> / <kbd>F</kbd></td>
+                <td>Mute SFX / Fullscreen</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <span class="modal-footer-hint">💡 Pro-Tip: You can also use your mouse or trackpad to draw anytime!</span>
+        <button class="modal-primary-btn" id="btnDismissGuide">Let's Draw!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- App Script -->
+  <script src="app.js"></script>
+</body>
+</html>
